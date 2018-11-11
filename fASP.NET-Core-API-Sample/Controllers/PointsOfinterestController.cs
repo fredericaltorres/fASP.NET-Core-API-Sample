@@ -30,8 +30,8 @@ namespace CityInfo.API.Controllers
         private Services.IMailService _mailService;
 
         public PointsOfInterestController(
-            ILogger<PointsOfInterestController> logger,
-            Services.IMailService mailService
+            ILogger<PointsOfInterestController> logger, // << Dependency injected, see file Startup.cs, method ConfigureServices()
+            Services.IMailService mailService  // << Dependency injected, see file Startup.cs, method ConfigureServices()
             )
         {
             // Dependency Injection syntax

@@ -35,8 +35,12 @@ namespace CityInfo.API
             ;
 
             // Custom Service
-
+#if DEBUG
             services.AddTransient<Services.IMailService, Services.LocalMailService>();
+#else
+            services.AddTransient<Services.IMailService, Services.CloudMailService>();
+#endif
+
             // services.AddTransient<Services.LocalMailService>(); // Added each time the instance is request via dependency injection
             // services.AddScoped<Services.LocalMailService>(); // Added for each request
             // services.AddSingleton<Services.LocalMailService>(); // Added the firt time the instance is requested
