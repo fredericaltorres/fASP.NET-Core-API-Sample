@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +24,13 @@ namespace CityInfo.API.Controllers
     public class CitiesController : Controller
     {
         public const string ROUTE = "api/cities";
+        
+        private ILogger<CitiesController> _logger;
+
+        public CitiesController(ILogger<CitiesController> logger)
+        {
+            this._logger =  logger; // Dependency Injection syntax
+        }
 
         /// <summary>
         /// http://localhost:1028/api/cities
@@ -33,6 +41,12 @@ namespace CityInfo.API.Controllers
         {
             return Ok(CitiesDataStore.Current.Cities);
         }
+        private Models.CityDto FindCity(int cityId) {
+            var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
+            if(city == null)
+                this._logger.LogInformation($"City with cityId:{cityId} not found");
+            return city;
+        }
 
         /// <summary>
         /// http://localhost:1028/api/cities/1
@@ -42,7 +56,7 @@ namespace CityInfo.API.Controllers
         [HttpGet("{id}")]
         public IActionResult GetCity(int id)
         {
-            var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == id);
+            var city = this.FindCity(id);
             if(city == null)
                 return NotFound();
             return Ok(city);

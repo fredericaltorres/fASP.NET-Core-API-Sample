@@ -41,6 +41,7 @@ namespace CityInfo.API
             // No need to add these loggers in ASP.NET Core 2.0: the call to WebHost.CreateDefaultBuilder(args) 
             // in the Program class takes care of that.
             loggerFactory.AddConsole();
+            loggerFactory.AddDebug();
 
             // Exception middleware must be first
             if (env.IsDevelopment())

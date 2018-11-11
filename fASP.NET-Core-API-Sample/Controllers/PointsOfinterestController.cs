@@ -1,8 +1,9 @@
-﻿using CityInfo.API.Models;
+﻿using System;
+using System.Collections.Generic;
+using CityInfo.API.Models;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -16,11 +17,38 @@ namespace CityInfo.API.Controllers
     {
         public const string GetPointsOfInterestEndPointName = "GetPointsOfInterest";
 
+        public const int HTTP_STATUS_CODE_INTERNAL_ERROR = 500;
+
         public const string ROUTE_GET_ALL = "{cityId}/pointsofinterest";
         public const string ROUTE_GET_ONE = "{cityId}/pointsofinterest/{id}";
         public const string ROUTE_POST    = ROUTE_GET_ALL;
         public const string ROUTE_PUT     = ROUTE_GET_ONE;
         public const string ROUTE_PATCH   = ROUTE_GET_ONE;
+        public const string ROUTE_DELETE  = ROUTE_GET_ONE;
+
+        private ILogger<PointsOfInterestController> _logger;
+
+        public PointsOfInterestController(ILogger<PointsOfInterestController> logger)
+        {
+            // Dependency Injection syntax
+            this._logger =  logger;
+
+            // Other possible syntax
+            // var logger = HttpContext.RequestServices.GetService(typeof(ILogger<PointsOfInterestController>));
+        }
+
+        private Models.CityDto FindCity(int cityId) {
+            var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
+            if(city == null)
+                this._logger.LogInformation($"City with cityId:{cityId} not found");
+            return city;
+        }
+
+        private PointOfInterestDto FindPointOfInterest(CityDto city, int id)
+        {
+            var pointOfInterestFromStore = city.PointsOfInterests.FirstOrDefault(p => p.Id == id);
+            return pointOfInterestFromStore;
+        }
 
         /// <summary>
         /// http://localhost:1028/api/cities/1/pointsofinterest
@@ -29,10 +57,18 @@ namespace CityInfo.API.Controllers
         [HttpGet(ROUTE_GET_ALL)]
         public IActionResult GetPointsOfInterest(int cityId)
         {
-            var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
-            if(city == null)
-                return NotFound();
-            return Ok(city.PointsOfInterest);
+            try {
+                throw new Exception("zizi");
+                var city = this.FindCity(cityId);
+                if(city == null)
+                    return NotFound();
+                return Ok(city.PointsOfInterests);
+            }
+            catch(System.Exception ex)
+            {
+                this._logger.LogError($"Exception in {nameof(GetPointsOfInterest)} cityId:{cityId}", ex);                
+                return StatusCode(HTTP_STATUS_CODE_INTERNAL_ERROR, "An issue happened (Do not expose sensitive info in this text)");
+            }
         }
 
         /// <summary>
@@ -44,10 +80,10 @@ namespace CityInfo.API.Controllers
         [HttpGet(ROUTE_GET_ONE, Name = GetPointsOfInterestEndPointName)]
         public IActionResult GetPointsOfInterest(int cityId, int id)
         {
-            var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
+            var city = this.FindCity(cityId);
             if(city == null)
                 return NotFound();
-            var poi = city.PointsOfInterest.FirstOrDefault(p => p.Id == id);
+            var poi = FindPointOfInterest(city, id);
             if(poi == null)
                 return NotFound();
             return Ok(poi);
@@ -95,11 +131,11 @@ namespace CityInfo.API.Controllers
             if(!ValidatePointOfInterest(pointOfInterest))
                 return BadRequest(this.ModelState); // Passing the ModelState to return the list of error to the client
 
-            var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
+            var city = this.FindCity(cityId);
             if(city == null) return NotFound();
 
             var maxPointOfInterestId = CitiesDataStore.Current.Cities
-                .SelectMany(c => c.PointsOfInterest)
+                .SelectMany(c => c.PointsOfInterests)
                     .Max(p => p.Id);
 
             var newPointOfinterest = new PointOfInterestDto()
@@ -109,7 +145,7 @@ namespace CityInfo.API.Controllers
                 Description = pointOfInterest.Description
             };
 
-            city.PointsOfInterest.Add(newPointOfinterest);
+            city.PointsOfInterests.Add(newPointOfinterest);
 
             // Need to return a http status code 201 with the the location header containing
             // the url to access the created resource
@@ -139,12 +175,11 @@ namespace CityInfo.API.Controllers
             if(!ValidatePointOfInterest(pointOfInterest))
                 return BadRequest(this.ModelState); // Passing the ModelState to return the list of error to the client
 
-
-            var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
+            var city = this.FindCity(cityId);
             if(city == null)
                 return NotFound();
             
-            var pointOfInterestFromStore = city.PointsOfInterest.FirstOrDefault(p => p.Id == id);
+            var pointOfInterestFromStore = this.FindPointOfInterest(city, id);
             if(pointOfInterestFromStore == null)
                  return NotFound();
 
@@ -176,12 +211,12 @@ namespace CityInfo.API.Controllers
         {
             if(patchDoc == null) return BadRequest();
 
-            var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
+            var city = this.FindCity(cityId);
             if(city == null)
                 return NotFound();
             
             // Load the resource to update from the store
-            var pointOfInterestFromStore = city.PointsOfInterest.FirstOrDefault(p => p.Id == id);
+            var pointOfInterestFromStore = this.FindPointOfInterest(city, id);
             if(pointOfInterestFromStore == null)
                  return NotFound();
 
@@ -192,13 +227,11 @@ namespace CityInfo.API.Controllers
                 Description = pointOfInterestFromStore.Description
             };
 
-
             // Patch the loaded resource from the store with the resource passed in the body.
             // All properties missing from the body have the default value read from the store
             patchDoc.ApplyTo(pointOfInterestToPatch, this.ModelState); // Pass ModelState so data validation is perform on instance contained in patchDoc
             if(!this.ModelState.IsValid)
                 return BadRequest(this.ModelState);
-
 
             this.CheckPointOfinterestNameAndDescriptionAreNotTheSame(pointOfInterestToPatch);
             // Force data validation on pointOfInterestToPatch
@@ -206,9 +239,25 @@ namespace CityInfo.API.Controllers
             if(!this.ModelState.IsValid)
                 return BadRequest(this.ModelState);
 
-
             pointOfInterestFromStore.Name = pointOfInterestToPatch.Name;
             pointOfInterestFromStore.Description = pointOfInterestToPatch.Description;
+            // Http put must return http code 204 - Ok with No Content to return
+            return NoContent();
+        }
+
+        [HttpDelete(ROUTE_DELETE)]
+        public IActionResult DeletePointsOfInterest(int cityId, int id)
+        {
+            var city = this.FindCity(cityId);
+            if(city == null)
+                return NotFound();
+            
+            var pointOfInterestFromStore = this.FindPointOfInterest(city, id);
+            if(pointOfInterestFromStore == null)
+                 return NotFound();
+
+            city.PointsOfInterests.Remove(pointOfInterestFromStore);
+
             // Http put must return http code 204 - Ok with No Content to return
             return NoContent();
         }
