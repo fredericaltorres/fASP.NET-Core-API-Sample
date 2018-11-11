@@ -27,14 +27,19 @@ namespace CityInfo.API.Controllers
         public const string ROUTE_DELETE  = ROUTE_GET_ONE;
 
         private ILogger<PointsOfInterestController> _logger;
+        private Services.IMailService _mailService;
 
-        public PointsOfInterestController(ILogger<PointsOfInterestController> logger)
+        public PointsOfInterestController(
+            ILogger<PointsOfInterestController> logger,
+            Services.IMailService mailService
+            )
         {
             // Dependency Injection syntax
             this._logger =  logger;
-
             // Other possible syntax
             // var logger = HttpContext.RequestServices.GetService(typeof(ILogger<PointsOfInterestController>));
+
+            this._mailService = mailService;
         }
 
         private Models.CityDto FindCity(int cityId) {
@@ -257,6 +262,8 @@ namespace CityInfo.API.Controllers
                  return NotFound();
 
             city.PointsOfInterests.Remove(pointOfInterestFromStore);
+
+            this._mailService.Send("Point of interest deleted", $"Point of interest name:{pointOfInterestFromStore.Name}, id:{pointOfInterestFromStore.Id} was deleted");
 
             // Http put must return http code 204 - Ok with No Content to return
             return NoContent();

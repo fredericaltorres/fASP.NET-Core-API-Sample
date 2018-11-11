@@ -33,6 +33,13 @@ namespace CityInfo.API
                     }})
                 */
             ;
+
+            // Custom Service
+
+            services.AddTransient<Services.IMailService, Services.LocalMailService>();
+            // services.AddTransient<Services.LocalMailService>(); // Added each time the instance is request via dependency injection
+            // services.AddScoped<Services.LocalMailService>(); // Added for each request
+            // services.AddSingleton<Services.LocalMailService>(); // Added the firt time the instance is requested
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -42,7 +49,8 @@ namespace CityInfo.API
             // in the Program class takes care of that.
             loggerFactory.AddConsole();
             loggerFactory.AddDebug();
-
+            loggerFactory.AddProvider(new NLog.Extensions.Logging.NLogLoggerProvider());
+            
             // Exception middleware must be first
             if (env.IsDevelopment())
             {
