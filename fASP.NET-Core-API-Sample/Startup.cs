@@ -15,14 +15,23 @@ namespace CityInfo.API
 {
     public class Startup
     {
-        public static IConfigurationRoot Configuration;
-        public Startup(IHostingEnvironment env)
-        {
-            var builder = new ConfigurationBuilder()
-                    .SetBasePath(env.ContentRootPath)
-                        .AddJsonFile("appSettings.json", optional: false, reloadOnChange: true);
+        /*
+            Old Configuration configuration syntax
 
-            Startup.Configuration = builder.Build();
+            public static IConfigurationRoot Configuration;
+            public Startup(IHostingEnvironment env)
+            {
+                var builder = new ConfigurationBuilder().SetBasePath(env.ContentRootPath).AddJsonFile("appSettings.json", optional: false, reloadOnChange: true);
+                Startup.Configuration = builder.Build();
+            }
+        */
+
+        // New Configuration configuration syntax
+        public static IConfiguration Configuration;
+
+        public Startup(IConfiguration configuration)
+        {
+            Startup.Configuration = configuration;
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
