@@ -18,10 +18,13 @@ namespace CityInfo.API
         // For more information on how to configure your application, visit http://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc()  // Add middleware to support web api
+            services.AddMvc() // Add middleware to support web api
 
                 // Add support for application/xml format
+                // Header: Accept=application/xml
                 .AddMvcOptions(o => o.OutputFormatters.Add(new XmlDataContractSerializerOutputFormatter()))
+
+                // .AddMvcOptions(o => o.OutputFormatters.Clear())
 
                 /* Set Json format as Pascal Case
                 .AddJsonOptions(o => { if(o.SerializerSettings.ContractResolver != null) {
@@ -61,10 +64,11 @@ namespace CityInfo.API
             //    throw new Exception("Example exception");
             //});
 
-            //app.Run(async (context) =>
-            //{
-            //    await context.Response.WriteAsync("Hello World!");
-            //});
+            // Answer for http://localhost
+            app.Run(async (context) =>
+            {
+                await context.Response.WriteAsync("Hello World!");
+            });
         }
     }
 }
