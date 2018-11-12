@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using CityInfo.API.Models;
+using CityInfo.API.Services;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -24,12 +26,18 @@ namespace CityInfo.API.Controllers
     public class CitiesController : Controller
     {
         public const string ROUTE = "api/cities";
+
         
         private ILogger<CitiesController> _logger;
+        private ICityInfoRepository _cityInfoRepository;
 
-        public CitiesController(ILogger<CitiesController> logger)
+        public CitiesController(
+            ILogger<CitiesController> logger,
+            ICityInfoRepository cityInfoRepository
+            )
         {
             this._logger =  logger; // Dependency Injection syntax
+            this._cityInfoRepository = cityInfoRepository;
         }
 
         /// <summary>
@@ -39,9 +47,23 @@ namespace CityInfo.API.Controllers
         [HttpGet()]
         public IActionResult GetCities()
         {
-            return Ok(CitiesDataStore.Current.Cities);
+            // In memory database
+            // return Ok(CitiesDataStore.Current.Cities);
+
+            var cityEntities = this._cityInfoRepository.GetCities();
+            var results = new List<CityWithoutPointsOfInterestDto>();
+            foreach(var cityEntity in cityEntities)
+            {
+                results.Add(new CityWithoutPointsOfInterestDto() {
+                    Id = cityEntity.Id,
+                    Description = cityEntity.Description,
+                    Name = cityEntity.Name
+                });
+            }
+            return Ok(results);
         }
         private Models.CityDto FindCity(int cityId) {
+
             var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
             if(city == null)
                 this._logger.LogInformation($"City with cityId:{cityId} not found");

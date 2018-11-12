@@ -53,7 +53,7 @@ namespace CityInfo.API
             // services.AddTransient<Services.LocalMailService>(); // Added each time the instance is request via dependency injection
             // services.AddScoped<Services.LocalMailService>(); // Added for each request
             // services.AddSingleton<Services.LocalMailService>(); // Added the firt time the instance is requested
-            
+
             // Register/Initialize Entity Framework Context
             // Will use the file .\appSettings.json
             // Or Will use the file ENV VAR connectionStrings:cityInfoDBConnectionString, 
@@ -62,10 +62,18 @@ namespace CityInfo.API
             var connectionString = Startup.Configuration["connectionStrings:cityInfoDBConnectionString"];
 
             services.AddDbContext<Entities.CityInfoContext>(o => o.UseSqlServer(connectionString));
+
+            // Register the repository, must be registered after the Entity Framework context
+            // is registered
+            services.AddScoped<Services.ICityInfoRepository, Services.CityInfoRepository>(); // Added for each request
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        public void Configure(
+            IApplicationBuilder app, 
+            IHostingEnvironment env, 
+            ILoggerFactory loggerFactory,
+            Entities.CityInfoContext cityInfoContext)
         {
             // No need to add these loggers in ASP.NET Core 2.0: the call to WebHost.CreateDefaultBuilder(args) 
             // in the Program class takes care of that.
@@ -82,6 +90,9 @@ namespace CityInfo.API
             {
                 app.UseExceptionHandler();
             }
+
+            // Populate database with data if empty
+            cityInfoContext.EnsureSeedDataForContext();
 
             // Return http status code and status text on error
             // to be available in a browser
@@ -114,4 +125,3 @@ namespace CityInfo.API
         Startup.Configuration = builder.Build();
     }
 */
-
