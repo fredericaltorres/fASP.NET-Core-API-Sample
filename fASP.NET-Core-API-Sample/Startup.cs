@@ -50,13 +50,17 @@ namespace CityInfo.API
 #else
             services.AddTransient<Services.IMailService, Services.CloudMailService>();
 #endif
-
             // services.AddTransient<Services.LocalMailService>(); // Added each time the instance is request via dependency injection
             // services.AddScoped<Services.LocalMailService>(); // Added for each request
             // services.AddSingleton<Services.LocalMailService>(); // Added the firt time the instance is requested
+            
+            // Register/Initialize Entity Framework Context
+            // Will use the file .\appSettings.json
+            // Or Will use the file ENV VAR connectionStrings:cityInfoDBConnectionString, 
+            // See project Debug section Environment Variables or Windows Systen Environment Variables.
+            // Environment Variables override all previous settings.
+            var connectionString = Startup.Configuration["connectionStrings:cityInfoDBConnectionString"];
 
-            // Register Entity Framework Context
-            var connectionString = "Server=localhost;Database=CityInfoDB;Trusted_Connection=True;";
             services.AddDbContext<Entities.CityInfoContext>(o => o.UseSqlServer(connectionString));
         }
 
