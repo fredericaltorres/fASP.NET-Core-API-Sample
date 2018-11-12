@@ -10,23 +10,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
+using Microsoft.EntityFrameworkCore; // Needed for services.AddDbContext<Entities.CityInfoContext>(o => o.UseSqlServer);
 
 namespace CityInfo.API
 {
     public class Startup
     {
-        /*
-            Old Configuration configuration syntax
-
-            public static IConfigurationRoot Configuration;
-            public Startup(IHostingEnvironment env)
-            {
-                var builder = new ConfigurationBuilder().SetBasePath(env.ContentRootPath).AddJsonFile("appSettings.json", optional: false, reloadOnChange: true);
-                Startup.Configuration = builder.Build();
-            }
-        */
-
-        // New Configuration configuration syntax
+        // New Configuration configuration syntax, see old configuration syntax at the end of the file
         public static IConfiguration Configuration;
 
         public Startup(IConfiguration configuration)
@@ -64,6 +54,10 @@ namespace CityInfo.API
             // services.AddTransient<Services.LocalMailService>(); // Added each time the instance is request via dependency injection
             // services.AddScoped<Services.LocalMailService>(); // Added for each request
             // services.AddSingleton<Services.LocalMailService>(); // Added the firt time the instance is requested
+
+            // Register Entity Framework Context
+            var connectionString = "Server=localhost;Database=CityInfoDB;Trusted_Connection=True;";
+            services.AddDbContext<Entities.CityInfoContext>(o => o.UseSqlServer(connectionString));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -72,7 +66,7 @@ namespace CityInfo.API
             // No need to add these loggers in ASP.NET Core 2.0: the call to WebHost.CreateDefaultBuilder(args) 
             // in the Program class takes care of that.
             loggerFactory.AddConsole();
-            loggerFactory.AddDebug();
+            // loggerFactory.AddDebug();
             loggerFactory.AddProvider(new NLog.Extensions.Logging.NLogLoggerProvider());
             
             // Exception middleware must be first
@@ -105,3 +99,15 @@ namespace CityInfo.API
         }
     }
 }
+
+/*
+    Old Configuration configuration syntax
+
+    public static IConfigurationRoot Configuration;
+    public Startup(IHostingEnvironment env)
+    {
+        var builder = new ConfigurationBuilder().SetBasePath(env.ContentRootPath).AddJsonFile("appSettings.json", optional: false, reloadOnChange: true);
+        Startup.Configuration = builder.Build();
+    }
+*/
+
