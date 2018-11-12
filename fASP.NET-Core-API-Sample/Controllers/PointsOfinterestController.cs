@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Linq;
 using System.Threading.Tasks;
+using CityInfo.API.Services;
 
 namespace CityInfo.API.Controllers
 {
@@ -28,10 +29,12 @@ namespace CityInfo.API.Controllers
 
         private ILogger<PointsOfInterestController> _logger;
         private Services.IMailService _mailService;
+        private ICityInfoRepository _cityInfoRepository;
 
         public PointsOfInterestController(
             ILogger<PointsOfInterestController> logger, // << Dependency injected, see file Startup.cs, method ConfigureServices()
-            Services.IMailService mailService  // << Dependency injected, see file Startup.cs, method ConfigureServices()
+            Services.IMailService mailService,  // << Dependency injected, see file Startup.cs, method ConfigureServices()
+            ICityInfoRepository cityInfoRepository   // << Dependency injected, see file Startup.cs, method ConfigureServices()
             )
         {
             // Dependency Injection syntax
@@ -40,13 +43,37 @@ namespace CityInfo.API.Controllers
             // var logger = HttpContext.RequestServices.GetService(typeof(ILogger<PointsOfInterestController>));
 
             this._mailService = mailService;
+            this._cityInfoRepository = cityInfoRepository;
         }
 
-        private Models.CityDto FindCity(int cityId) {
-            var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
+        //private Models.CityDto FindCity(int cityId) {
+        //    var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
+        //    if(city == null)
+        //        this._logger.LogInformation($"City with cityId:{cityId} not found");
+        //    return city;
+        //}
+
+         private Models.CityDto FindCity(int cityId, bool includePointOfInterest = false) {
+
+            // var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
+            var city = this._cityInfoRepository.GetCity(cityId, includePointOfInterest);
             if(city == null)
+            {
                 this._logger.LogInformation($"City with cityId:{cityId} not found");
-            return city;
+                return null;
+            }
+
+            var cityDto = new CityDto()
+            {
+                Name = city.Name,
+                Description = city.Description,
+                Id = city.Id
+            };
+            foreach(var poi in city.PointsOfInterest)
+            {
+                cityDto.PointsOfInterests.Add(new PointOfInterestDto() { Id = poi.Id, Name = poi.Name, Description = poi.Description });
+            }
+            return cityDto;
         }
 
         private PointOfInterestDto FindPointOfInterest(CityDto city, int id)
@@ -63,7 +90,16 @@ namespace CityInfo.API.Controllers
         public IActionResult GetPointsOfInterest(int cityId)
         {
             try {
-                throw new Exception("zizi");
+
+                if(this._cityInfoRepository.CityExists(cityId))
+                {
+                    this._logger.LogInformation($"City with id ${cityId} was not found when calling {nameof(GetPointsOfInterest)}");
+                    return NotFound();
+                }
+
+                var pointsOfInterestForCity = this._cityInfoRepository.GetPointsOfInterestForCity(cityId);
+
+                // throw new Exception("failing...");
                 var city = this.FindCity(cityId);
                 if(city == null)
                     return NotFound();

@@ -62,29 +62,52 @@ namespace CityInfo.API.Controllers
             }
             return Ok(results);
         }
-        private Models.CityDto FindCity(int cityId) {
 
-            var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
+        private Models.CityDto FindCity(int cityId, bool includePointOfInterest = false) {
+
+            // var city = CitiesDataStore.Current.Cities.FirstOrDefault(c => c.Id == cityId);
+            var city = this._cityInfoRepository.GetCity(cityId, includePointOfInterest);
             if(city == null)
+            {
                 this._logger.LogInformation($"City with cityId:{cityId} not found");
-            return city;
+                return null;
+            }
+
+            var cityDto = new CityDto()
+            {
+                Name = city.Name,
+                Description = city.Description,
+                Id = city.Id
+            };
+            foreach(var poi in city.PointsOfInterest)
+            {
+                cityDto.PointsOfInterests.Add(new PointOfInterestDto() { Id = poi.Id, Name = poi.Name, Description = poi.Description });
+            }
+            return cityDto;
         }
 
         /// <summary>
         /// http://localhost:1028/api/cities/1
+        /// http://localhost:1028/api/cities/1?includePointOfInterest=true
+        /// http://localhost:1028/api/cities/1?includePointOfInterest=false
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
         [HttpGet("{id}")]
-        public IActionResult GetCity(int id)
+        public IActionResult GetCity(int id, bool includePointOfInterest = false)
         {
-            var city = this.FindCity(id);
+            var city = this.FindCity(id, includePointOfInterest);
             if(city == null)
                 return NotFound();
-            return Ok(city);
+
+            if(includePointOfInterest)
+                return Ok(city);
+            else 
+                return Ok(CityWithoutPointsOfInterestDto.From(city));
         }
 
         // [HttpGet()]
+        /*
         public JsonResult GetJsonCities()
         {
             return new JsonResult(
@@ -95,5 +118,6 @@ namespace CityInfo.API.Controllers
                 }
             );
         }
+        */
     }
 }

@@ -11,5 +11,15 @@ namespace CityInfo.API.Models
         public string Name { get; set;}
         public string Description { get; set;}
         
+
+        public static CityWithoutPointsOfInterestDto From(CityDto city)
+        {
+            return new CityWithoutPointsOfInterestDto()
+            {
+                Id = city.Id,
+                Name = city.Name,
+                Description = city.Description
+            };
+        }
     }
 }
